@@ -226,3 +226,89 @@ Das Docker Image kann nun weltweit mit folgendem Befehl ausgeführt werden:
 ```bash
 docker run z8o49/pythonwebserver
 ```
+
+## Container Performance
+
+### Ziel der Aufgabe
+
+Es soll überprüft werden, wie viele Ressourcen (CPU, RAM) ein Docker Container benötigt.
+
+---
+
+### Verwendeter Befehl
+
+Zur Analyse der Container-Performance wird folgender Befehl verwendet:
+
+```bash
+docker stats
+```
+
+Dieser Befehl zeigt in Echtzeit die Ressourcennutzung aller laufenden Container an.
+
+---
+
+### Beispiel-Output
+
+```stats
+CONTAINER ID   NAME              CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O     PIDS
+c3f3c024507b   pythonwebserver   0.03%     14.06MiB / 7.577GiB   0.18%     13.1kB / 4.78kB   0B / 1.72MB   1
+```
+
+---
+
+### Geforderte Informationen
+
+Aus dem Output werden die relevanten Werte entnommen:
+
+```stats
+CONTAINER ID   c3f3c024507b
+NAME           pythonwebserver
+CPU %          0.03%
+MEM USAGE      14.06MiB / 7.577GiB (0.18%)
+NET I/O        13.1kB / 4.78kB
+BLOCK I/O      0B / 1.72MB
+PIDS           1
+```
+
+---
+
+### Cheatsheet
+
+#### Performance anzeigen
+
+```bash
+docker stats
+```
+
+Zeigt:
+
+- CPU-Auslastung
+- RAM-Verbrauch
+- Netzwerkaktivität
+- laufende Container
+
+#### Nur bestimmte Container überwachen
+
+```bash
+docker stats pythonwebserver
+```
+
+#### Einmalige Ausgabe (kein Live-Update)
+
+```bash
+docker stats --no-stream
+```
+
+---
+
+### Erklärung der Werte
+
+- `CPU %` – Wie stark der Container die CPU nutzt
+- `MEM USAGE` – Wie viel Arbeitsspeicher aktuell verwendet wird
+- `LIMIT` – Maximal verfügbarer RAM
+
+---
+
+### Fazit
+
+Mit `docker stats` kann schnell und einfach überprüft werden, wie effizient ein Container läuft und ob er zu viele Ressourcen verbraucht.
