@@ -312,3 +312,260 @@ docker stats --no-stream
 ### Fazit
 
 Mit `docker stats` kann schnell und einfach überprüft werden, wie effizient ein Container läuft und ob er zu viele Ressourcen verbraucht.
+
+## Portainer mit Docker Compose
+
+### Ziel der Aufgabe
+
+Portainer soll nicht mehr manuell mit `docker run`, sondern über eine wiederverwendbare `docker-compose.yml` gestartet werden. Zusätzlich wird ein persistentes Volume verwendet.
+
+---
+
+### Vorgehen
+
+#### 1. docker-compose.yml erstellen
+
+Es wird eine Compose-Datei erstellt, welche den Portainer Container definiert:
+
+```yaml
+version: "3.8"
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer_with_volume
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/portainer_data:/data
+```
+
+#### 2. Container starten
+
+```bash
+docker compose up -d
+```
+
+Der Container wird im Hintergrund gestartet.
+
+#### 3. Zugriff auf Portainer
+
+Portainer ist erreichbar unter:
+
+```
+http://localhost:9000
+```
+
+Beim ersten Start wird ein Benutzer erstellt und das Setup abgeschlossen.
+
+#### 4. Container-Informationen speichern
+
+```bash
+docker inspect portainer_with_volume > docker-inspect.txt
+```
+
+#### 5. Volume überprüfen
+
+Da ein Bind Mount verwendet wird, kann der Host-Pfad wie folgt überprüft werden:
+
+```bash
+ls -l /srv/portainer_data > volume-ls.txt
+```
+
+---
+
+### Ablage im Repository
+
+Im Repository wird ein neuer Ordner erstellt:
+
+```
+portainer/
+├── docker-compose.yml
+├── docker-inspect.txt
+└── volume-ls.txt
+```
+
+---
+
+### Erklärung: Persistentes Volume
+
+Das Volume `/srv/portainer_data` wird verwendet, um Daten dauerhaft zu speichern.
+
+Portainer speichert folgende Daten:
+
+- Benutzerkonten
+- Einstellungen
+- Container-Konfigurationen
+
+Ohne Volume würden diese Daten bei einem Container-Neustart verloren gehen.
+
+---
+
+### Verhalten ohne Volume
+
+Wenn der Container und das Image gelöscht werden:
+
+- Alle Daten gehen verloren
+- Portainer startet wieder im Initialzustand
+- Der Benutzer muss neu erstellt werden
+
+---
+
+### Fazit
+
+- Portainer wurde erfolgreich mit Docker Compose betrieben
+- Ein persistentes Volume wurde korrekt eingebunden
+- Daten bleiben auch nach einem Neustart des Containers erhalten.
+
+## Pi-hole Installation mit Docker und Portainer
+
+### Ziel der Aufgabe
+
+Pi-hole wurde als Docker Container über Portainer installiert, um DNS-Anfragen im Netzwerk zu filtern und Werbung sowie Tracking zu blockieren.
+
+---
+
+### Was ist Pi-hole?
+
+Pi-hole ist ein DNS-basierter Werbe- und Trackingblocker.
+
+Funktionsweise:
+
+- Alle DNS-Anfragen im Netzwerk laufen über Pi-hole
+- Werbe- und Trackingdomains werden gefiltert
+- Erlaubte Seiten werden normal weitergeleitet
+
+---
+
+### Vorgehen (Installation über Portainer)
+
+#### 1. Volume erstellen
+
+In Portainer wurde ein Volume erstellt:
+
+- Name: `pihole`
+- Speicherort: `/var/lib/docker/volumes/pihole/_data`
+
+Das Volume speichert Konfigurationen dauerhaft, auch nach einem Neustart oder dem Löschen des Containers.
+
+#### 2. Container erstellen
+
+Image:
+
+```
+pihole/pihole:latest
+```
+
+Container-Name:
+
+```
+pihole
+```
+
+#### 3. Ports konfigurieren
+
+Folgende Ports wurden freigegeben:
+
+- `53 TCP` – DNS
+- `53 UDP` – DNS
+- `80 TCP` – Web Interface
+- `443 TCP` – HTTPS (optional)
+
+DHCP Port 67 wurde nicht verwendet.
+
+#### 4. Volumes mounten
+
+```
+/dnsmasq.d
+/pihole
+```
+
+Beide Pfade wurden auf das erstellte Volume gebunden.
+
+#### 5. Umgebungsvariablen setzen
+
+- `TZ` = Europe/Berlin
+- `WEBPASSWORD` = eigenes Passwort
+- `DNS1` = Router-IP oder externes DNS
+- `DNS2` = leer
+
+#### 6. Container starten
+
+Der Container wurde über "Deploy the container" in Portainer erfolgreich gestartet.
+
+---
+
+### Zugriff auf Pi-hole
+
+Das Admin Interface ist erreichbar unter:
+
+```
+http://localhost/admin
+```
+
+oder:
+
+```
+http://<IP-des-Servers>/admin
+```
+
+---
+
+### Test und Beweis der Funktion
+
+#### DNS Test
+
+```bash
+nslookup google.com 127.0.0.1
+```
+
+Zeigt, dass Pi-hole als DNS antwortet.
+
+#### Pi-hole Query Log
+
+Im Webinterface sind folgende Informationen sichtbar:
+
+- Alle DNS-Anfragen
+- Blockierte Domains
+- Clients im Netzwerk
+
+#### Website Block Test
+
+Eine Domain wurde in der Blacklist von Pi-hole eingetragen:
+
+```
+example.com
+```
+
+Ergebnis: Die Seite ist nicht mehr erreichbar.
+
+---
+
+### Warum ist ein Volume wichtig?
+
+Das Volume sorgt dafür, dass:
+
+- Einstellungen gespeichert bleiben
+- Blacklists erhalten bleiben
+- Benutzerkonfiguration nicht verloren geht
+
+Ohne Volume wäre Pi-hole nach einem Neustart komplett zurückgesetzt.
+
+---
+
+### Fazit
+
+- Pi-hole wurde erfolgreich über Portainer installiert
+- DNS läuft über den Container
+- Werbung kann zentral im Netzwerk blockiert werden
+- Persistente Daten wurden korrekt über ein Volume gespeichert
+
+---
+
+### Hinweise
+
+- DHCP Port 67 wurde bewusst nicht aktiviert
+- DNS läuft über Pi-hole (`127.0.0.1` / Server-IP)
+- Container läuft stabil über Docker
